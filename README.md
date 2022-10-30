@@ -8,7 +8,11 @@ Our understanding of the transversal objectives of the project seems to be struc
 
 
 
-## Installation
+## Launching predictions
+
+Use file run.py to launch predictions file.
+
+## Files and functions
 
 
 
