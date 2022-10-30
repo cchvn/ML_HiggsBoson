@@ -235,7 +235,6 @@ def gradient_descent_log_ridge(tx, y,lambda_ridge, initial_w, max_iters,gamma):
         Value of cost function at w  
     """
     m = len(y)
-    cost_history = np.zeros((max_iters,1))
     w = initial_w
 
     for i in range(max_iters):
@@ -267,7 +266,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     
     """    
     
-    return gradient_descent_log_ridge(tx, y,lambda_, initial_w, max_iters,gamma)
+    return gradient_descent_log_ridge(tx, y, lambda_, initial_w, max_iters,gamma)
 
 
 def log_predict(X,w):
