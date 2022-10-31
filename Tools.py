@@ -1,39 +1,10 @@
 from helpers import *
-from Preprocess import *
-from SVM import *
 
-def load_csv_train(path_train, sub_sample=False):
-    """Loads data and returns y (class labels 1 and -1), tX (features) and ids (event ids)"""
-    y = np.genfromtxt(path_train, delimiter=",", skip_header=1, dtype=str, usecols=1)
-    x = np.genfromtxt(path_train, delimiter=",", skip_header=1)
-    ids = x[:, 0].astype(int)
-    input_data = x[:, 2:] #first 2 columns are Id,Prediction
-    ids = np.array([ids]).T
-    # convert class labels from strings to binary (-1,1)
-    yb = np.ones(len(y))
-    yb[np.where(y == "b")] = -1 
-    yb = np.array([yb]).T
-    # sub-sample
-    if sub_sample:
-        yb = yb[:5000,:]
-        input_data = input_data[:5000,:]
-        ids = ids[:5000,:]
-
-    return yb, input_data, ids
-
-def load_csv_test(path_test, sub_sample=False):
-    """Loads data and returns y (class labels), tX (features) and ids (event ids)"""
-    x = np.genfromtxt(path_test, delimiter=",", skip_header=1)
-    ids = x[:, 0].astype(int)
-    input_data = x[:, 2:]
-    ids = np.array([ids]).T
-
-    # sub-sample
-    if sub_sample:
-        input_data = input_data[:500,:]
-        ids = ids[:500,:]
-
-    return input_data, ids
+def build_model_data(y, x):
+    """Form (y,tX) to get regression data in matrix form."""
+    num_samples = len(y)
+    tx = np.c_[np.ones(num_samples), x]
+    return y, tx
 
 
 def confusion_matrix(y,ypred):
@@ -75,7 +46,7 @@ def export_to_csv(ypred,Id_test, text):
     np.savetxt(text, output, delimiter=",",fmt= "%i", header = "Id,Prediction")
     return None
 
-def launch_predictions (degree_poly):
+#def launch_predictions (degree_poly):
     Y_train, X_train, Id_train = load_csv_train("train.csv", False)
     X_test, Id_test = load_csv_test("test.csv", False)
     X_train,X_test = X_preprocessing(X_train, X_test, degree_poly) 
