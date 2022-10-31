@@ -16,11 +16,9 @@ Use file run.py to launch predictions file.
 
 helpers.py : importation and exportation of CSV files
 
-Tools.py : Confusion matrix, accuracy computation, opening X_train and X_test data files.
-
 preprocessing.ipynb : Vizualisation of data set and understanding important drivers
 
-Implementations.py : Basic machine learning functions from the course
+Implementations.py : Basic machine learning functions from the course and other function such as confusion matrix, accuracy computation, opening X_train and X_test data files.
 
 
 
