@@ -10,7 +10,7 @@ Our understanding of the transversal objectives of the project seems to be struc
 
 ## Launching predictions
 
-Use file run.py to launch predictions file.
+Use file run.ipynb to launch predictions file.
 
 ## Files and functions
 
