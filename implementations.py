@@ -70,9 +70,8 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         # store w and loss
         #ws.append(w)
         #losses.append(loss)
-        if n_iter % 100 == 0:   
-            print("GD iter. {bi}/{ti}: loss={l}, w0={w0}, w1={w1}".format(
-                bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+        print("GD iter. {bi}/{ti}: loss={l}, w0={w0}, w1={w1}".format(
+             bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
 
     return w, loss
 
@@ -103,13 +102,12 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
         grad = compute_mse_gradient(y[index,], tx[index,], w)
         w = w - gamma*grad
 
-        if n_iter % 100 == 0:
-            print("SGD iter. {bi}/{ti}: loss={l}, w0={w0}, w1={w1}".format(
-                bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+        print("SGD iter. {bi}/{ti}: loss={l}, w0={w0}, w1={w1}".format(
+            bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
               
         ws.append(w)
         losses.append(loss)
-    return losses, ws
+    return w, loss
 
 def least_squares(y, tx):
     
@@ -241,12 +239,10 @@ def gradient_descent_log_ridge(tx, y,lambda_ridge, initial_w, max_iters,gamma):
         w = w - (gamma/m) * (tx.T @ (sigmoid(tx @ w) - y) + w * lambda_ridge ) 
         
     cost = compute_logistic_cost(tx, y, w)
-    #return (cost[0], w)
     return w, cost
 
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    #reg_logistic_regression(tx,y,lambda_ridge,initial_w, max_iters,gamma):
     #Returns (w,loss) at final itteration
     #Loss does not include the penalty term
     
@@ -311,7 +307,7 @@ def K_fold_pipeline_log(X_train,Y_train, k, lambda_ridge,lambda_lasso, max_iters
         
         # Logistic Model fit with Ridge penalization
         initial_w = np.ones((n_dimension, 1))
-        error_temp, w_temp =  reg_logistic_regression(trainX,trainY,lambda_ridge,initial_w, max_iters, gamma)
+        w_temp, error_temp =  reg_logistic_regression(trainY,trainX,lambda_ridge,initial_w, max_iters, gamma)
         error_log.append(error_temp)
         w_log.append(w_temp)
         #Do predictions for the given models
@@ -338,20 +334,87 @@ def log_transform_inverse(y):
     y = y.astype(int) 
     return y
 
-def Pipeline_log(X_train, Y_train,X_test,  Id_test, name ="submission_logistic.csv") :
-    """ 
-    Fit, predict et export pour le modèle logistique
-    Choisir les hyperparamètres en fonction des K fold
-    """
-    #Fit logistic regression
-    n_dimension = np.shape(X_train)[1]
-    initial_w = np.ones((n_dimension, 1))
-    loss_log, w_log = reg_logistic_regression(X_train,Y_train, 0.1, initial_w, 100, 0.01)
+class SVM:
 
-    #Predict logistic regression
-    y_predict_log = log_predict(X_test,w_log)
-    y_predict_log = log_transform_inverse(y_predict_log)
-    create_csv_submission(Id_test, y_predict_log, "submission_logistic.csv")
+    def __init__(self, learning_rate=0.001, lambda_param=0.01, n_iters=1000):
+        self.lr = learning_rate
+        self.lambda_param = lambda_param
+        self.n_iters = n_iters
+        self.w = None
+        self.b = None
+
+
+    def fit(self, X, y):
+
+        """Computes the optimal model parameters w and b for the soft vector model 
+        Args:
+        y: shape=(N, 1)
+        X: shape=(N,M)
+        w: shape=(M, 1). The vector of model parameters.
+        lambda_ : Ridge regularization parameter
+    Returns:
+        Value of optimal w  
+        """
+        n_samples, n_features = X.shape
+        
+        y_ = np.where(y <= 0, -1, 1)
+        self.w = np.zeros(n_features)
+        self.b = 0
+
+        for _ in range(self.n_iters):
+            for idx, x_i in enumerate(X):
+                condition = y_[idx] * (np.dot(x_i, self.w) - self.b) >= 1
+                if condition:
+                    self.w -= self.lr * (2 * self.lambda_param * self.w)
+                else:
+                    self.w -= self.lr * (2 * self.lambda_param * self.w - np.dot(x_i, y_[idx]))
+                    self.b -= self.lr * y_[idx]
+
+
+    def predict(self, X):
+        """Predictions with new data on SVM 
+        """
+        approx = np.dot(X, self.w) - self.b
+        return np.sign(approx)
+
+def K_fold_pipeline_SVM(X_train,Y_train, k, lambda_ridge,lambda_lasso, max_iters, gamma):
+    """
+    This function implements the K fold cross validation technique on SVM models with penalties
+    output : Accuracy metric (average on all folds)  
+    This function can be use to find the best value lambda, gamma of a penalizer or gradient descent
+    """
+    # Divides the index into K groups 
+    n_dimension = np.shape(X_train)[1]
+    original = np.concatenate((X_train,Y_train), axis = 1)
+    index = np.arange(original.shape[0])   
+    index_group = np.array_split(index,k)
+    accuracy_ = []  
+    # Itération sur les k-folds
+
+    for i in index_group:
+        testX = original[i,0:-1]
+        testY = np.array([original[i,-1]]).T
+        train_index = np.setdiff1d(index,i)
+        trainX = original[train_index,0:-1]
+        trainY = np.array([original[train_index,-1]]).T
+
+    # SVM Model fit
+        support_vector_temp = SVM(gamma,lambda_ridge, max_iters) # Initialise la classe
+        support_vector_temp.fit( X_train, Y_train.flatten()) 
+        
+    #Do predictions for the given models
+        pred_SVM = support_vector_temp.predict(testX)
+    #compute evaluation metrics
+        accuracy_.append(accuracy(testY,pred_SVM))
+        
+    # Itération sur les pénalisateurs ridge et Lasso (lambda_lasso, lambda_ridge) - dans la boucle main
+    print("----- Soft Vector Machine ----- ")
+    print("k: ",k)
+    print("lambda_ridge: ",lambda_ridge)
+    print("lambda_lasso: ",lambda_lasso)
+    print("max_iters: ",max_iters)
+    print("gamma: ",gamma)
+    print("Accuracy", np.mean(accuracy_),"\n")
     return None
 
 def accuracy(y,ypred): 
@@ -386,3 +449,89 @@ def confusion_matrix(y,ypred):
     confusion_matrix = [[tn/n, fp/n], [fn/n, tp/n]]
     confusion_matrix = np.array(confusion_matrix)
     return confusion_matrix
+
+def build_model_data(y, x):
+    """Form (y,tX) to get regression data in matrix form."""
+    num_samples = len(y)
+    tx = np.c_[np.ones(num_samples), x]
+    return y, tx
+
+def standardize(x):
+        centered_data = x - np.mean(x, axis=0)
+        
+        std = np.std(centered_data, axis=0)
+        std[std==0.] = 1
+        
+        std_data = centered_data / std
+        
+    
+        return std_data
+
+def treat_data(x, mean = True):
+    
+    '''
+    get an imput array of features (columns) and replace all -999. values 
+    by the mean value of their column.
+    '''
+    
+    xx = x.copy()
+    for ind, column in enumerate(xx.T[:]):
+        if mean:
+            if np.isnan(column[column!=-999.].mean())==False:
+                column[column==-999.] = column[column!=-999.].mean()
+            else: 
+                column[column==-999.] = 0
+            
+        else:
+            return
+            ##rien pour l'instant
+        xx.T[ind] = column
+        
+    return xx
+
+def log_right_skewed(x):
+    eps = 1e-6
+    xx = x.copy()
+    #ids = np.array([0, 1, 2, 3, 5, 8, 9, 10, 13, 16, 23, 26, 29])
+    idx_3 = np.array([0, 1, 2, 5, 8, 9, 10, 13, 19, 23, 26, 29])
+    for i in idx_3:
+        xxx = xx[xx[:,i]!=-999.] 
+        minimum = xxx[:, i].min()
+        xx[xx[:,i]!=-999.][:, i] = np.log(1+xxx[:, i]+eps-minimum)
+    return xx
+
+def remove_unique(xx):
+        xxx = np.array(xx.copy())
+        liste = []
+        for ind, column in enumerate(xx.T[:]):
+            if np.std(column)==0.:
+                liste.append(ind)
+        xxx = np.delete(xxx, obj = liste  , axis = 1) 
+        return xxx
+
+def polynomial_exp(x, degree):
+    xx = x.copy()
+    for d in range(2, degree+1):
+        x = np.concatenate((x, np.power(xx, d)), axis = 1)
+    return x
+
+def split_data(x, y, ratio, seed=1):
+    """
+    split the dataset based on the split ratio. If ratio is 0.8 
+    you will have 80% of your data set dedicated to training 
+    and the rest dedicated to testing
+    """
+    # set seed
+    np.random.seed(seed)
+    # ***************************************************
+    # split the data based on the given ratio:
+    indices = np.arange(len(y))
+    np.random.shuffle(indices)
+    split = int( ratio * len(y) )
+    train_indices, test_indices= np.split(indices, np.array([split]))
+    train_data = x[train_indices]
+    train_labels = y[train_indices]
+    test_data = x[test_indices]
+    test_labels = y[test_indices]
+    return train_data, train_labels, test_data, test_labels
+
