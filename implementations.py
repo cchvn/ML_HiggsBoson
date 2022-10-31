@@ -351,5 +351,38 @@ def Pipeline_log(X_train, Y_train,X_test,  Id_test, name ="submission_logistic.c
     #Predict logistic regression
     y_predict_log = log_predict(X_test,w_log)
     y_predict_log = log_transform_inverse(y_predict_log)
-    export_to_csv(y_predict_log, Id_test, "submission_logistic.csv")
+    create_csv_submission(Id_test, y_predict_log, "submission_logistic.csv")
     return None
+
+def accuracy(y,ypred): 
+    matrix = confusion_matrix(y,ypred)
+    return matrix[0,0]+ matrix[1,1]
+
+def confusion_matrix(y,ypred):
+    """ Evaluates the confusion matrix for classification 
+    Args:
+        y: shape=(N, 1) variable to be predicted
+        ypred: shape=(N, 1) variable predicted by the model
+    Returns:
+         confusion matrix
+    """
+    fp = 0
+    fn = 0
+    tp = 0
+    tn = 0
+    n=len(y)
+    for actual_value, predicted_value in zip(y, ypred):
+        if predicted_value == actual_value:
+            if predicted_value == 1:
+                tp += 1
+            else: 
+                tn += 1
+        else: 
+            if predicted_value == 1:
+                fp += 1
+            else:
+                fn += 1
+                
+    confusion_matrix = [[tn/n, fp/n], [fn/n, tp/n]]
+    confusion_matrix = np.array(confusion_matrix)
+    return confusion_matrix
