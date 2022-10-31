@@ -21,7 +21,9 @@ preprocessing.ipynb : Vizualisation of data set and understanding important driv
 Implementations.py : Basic machine learning functions from the course and other function such as confusion matrix, accuracy computation, opening X_train and X_test data files.
 
 
+## Problems 
 
+We didn't manage to put the data files into the git repository, even zipped they were to big (>25MB), so you need to add your local path to these files into run.ipynb and project_1.ipynb.
 
 
 
